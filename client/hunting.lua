@@ -1,7 +1,10 @@
 currentZone = nil
 local spawnedEntities = 0
 entities = {}
+local aimBlockThread = nil
 
+-- FUNÇÃO DESABILITADA - Sistema de bloqueio de armas removido
+--[[
 local function disableWeapon()
     while not cache.weapon do Wait(1) end
 
@@ -13,24 +16,44 @@ local function disableWeapon()
         Wait(1)
     end
 end
+--]]
+
+local function disableWeapon()
+    -- Função desabilitada - não bloqueia mais armas
+end
+
+local function stopAimBlock()
+    if aimBlockThread then
+        aimBlockThread = nil
+    end
+end
 
 lib.onCache('weapon', function(value)
     if value then
+        -- AIMBLOCK DESABILITADO - Código comentado para permitir mira livre
+        --[[
+        -- Para qualquer aimblock anterior
+        if stopAimBlock then stopAimBlock() end
+
         if Config.AimBlock.enable then
             if Config.AimBlock.global then
+                -- Se global está ativo, bloqueia em qualquer lugar
                 if utils.validWeapon(Config.AimBlock.weaponsToBlock, value) then
                     aimBlock(Config.AimBlock.global)
                 end
             else
-                if currentZone then
+                -- Se não é global, só bloqueia fora das zonas de caça
+                if not currentZone then
                     if utils.validWeapon(Config.AimBlock.weaponsToBlock, value) then
-                        aimBlock(Config.AimBlock.global)
+                        aimBlock(false)
                     end
                 end
             end
         end
+        --]]
 
-
+        -- VERIFICAÇÃO DE ARMAS PERMITIDAS DESABILITADA
+        --[[
         if currentZone then
             if currentZone.allowedWeapons then
                 if not utils.validWeapon(currentZone.allowedWeapons, value) then
@@ -45,6 +68,13 @@ lib.onCache('weapon', function(value)
                 end
             end
         end
+        --]]
+    else
+        -- AIMBLOCK DESABILITADO - Código comentado
+        --[[
+        -- Para o aimblock quando não há arma
+        if stopAimBlock then stopAimBlock() end
+        --]]
     end
 end)
 
@@ -297,12 +327,28 @@ for zoneName, zoneData in pairs(Config.HuntingZones) do
         currentZone = zoneData
         SetForcePedFootstepsTracks(true)
 
+        -- AIMBLOCK DESABILITADO - Código comentado
+        --[[
+        -- Para o aimblock ao entrar na zona de caça
+        if stopAimBlock then stopAimBlock() end
+        --]]
+
         CreateThread(spawnEntities)
     end
 
     function zone:onExit()
         SetForcePedFootstepsTracks(false)
         currentZone = nil
+
+        -- AIMBLOCK DESABILITADO - Código comentado
+        --[[
+        -- Reativa o aimblock se necessário ao sair da zona
+        if cache.weapon and Config.AimBlock.enable and not Config.AimBlock.global then
+            if utils.validWeapon(Config.AimBlock.weaponsToBlock, cache.weapon) then
+                aimBlock(false)
+            end
+        end
+        --]]
     end
 end
 
@@ -517,7 +563,7 @@ local function createNPCtalk()
 															{name = 'Missões de Caça', coords = vec3(16.91, 3687.32, 39.68)},
 														}
 														local options = {
-															-- icon = "https://cdn-icons-png.freepik.com/256/1453/1453025.png", 
+															-- icon = "https://cdn-icons-png.freepik.com/256/1453/1453025.png",
 															color = {100, 255, 100, 100}, -- rgba value, used for internal icon and marker.
 															clearEnter = false, -- Upon entering the area, remove the waypoint.
 															blipId = 304, -- Display waypoint on map, or set to nil to disable.
@@ -536,7 +582,7 @@ local function createNPCtalk()
 										shouldClose = true,
 										action = function()
 											local waypoints = {
-												{name = 'Área de Caça', coords = vec3(1125.88, 4622.2, 80.08)},						
+												{name = 'Área de Caça', coords = vec3(1125.88, 4622.2, 80.08)},
 											}
 											local options = {
 												-- icon = "https://cdn-icons-png.freepik.com/256/3105/3105807.png",
